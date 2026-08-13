@@ -74,7 +74,7 @@ start_proxy() {
 start_minio() {
 	docker run -d --rm \
 		--name "$minio_name" \
-		-p 127.0.0.1::9000 \
+		-p 9000 \
 		-e MINIO_ROOT_USER=minioadmin \
 		-e MINIO_ROOT_PASSWORD=minioadmin \
 		minio/minio:latest server /data >/dev/null

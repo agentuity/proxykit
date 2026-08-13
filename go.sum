@@ -1,3 +1,5 @@
+github.com/agentuity/go-common v1.0.246 h1:F9gaJYTBlW9NoZhTUBt7FAlsGeZMAFqbIbFo/FfgxLs=
+github.com/agentuity/go-common v1.0.246/go.mod h1:WUGQr4CuWqiAgtjcPldcmbwHc7b/6ta7UrcdjtZFc04=
 github.com/aws/aws-sdk-go-v2 v1.41.12 h1:DIKX2c31ekm9RA2D9FBj1EWXx++9AdAqRw+e78Tq2Ck=
 github.com/aws/aws-sdk-go-v2 v1.41.12/go.mod h1:27+ACypSLljLAEKsCYOmrjKh83vuTRkuAe9Uv/3A4bg=
 github.com/aws/aws-sdk-go-v2/credentials v1.19.22 h1:SHfH6wyPsEgG7fVsi5rQxWEt7tuIcN2PGhb1mTFv6tE=
