@@ -531,11 +531,7 @@ func (h *Handler) forwardDirect(w http.ResponseWriter, r *http.Request, body []b
 // doUpstreamRequest creates and sends an upstream request using the original
 // request's headers (which already have real credentials injected by InjectSecrets).
 func (h *Handler) doUpstreamRequest(r *http.Request) (*http.Response, error) {
-	scheme := "https"
-	if r.TLS == nil {
-		scheme = "http"
-	}
-	targetURL := fmt.Sprintf("%s://%s%s", scheme, r.Host, r.RequestURI)
+	targetURL := fmt.Sprintf("%s://%s%s", h.upstreamScheme(r), r.Host, r.RequestURI)
 
 	upstreamReq, err := http.NewRequestWithContext(r.Context(), r.Method, targetURL, r.Body)
 	if err != nil {
@@ -550,11 +546,7 @@ func (h *Handler) doUpstreamRequest(r *http.Request) (*http.Response, error) {
 // doUpstreamRequestWithBody creates and sends an upstream request using a
 // pre-buffered body (for upload-pack requests that were buffered for parsing).
 func (h *Handler) doUpstreamRequestWithBody(r *http.Request, body []byte) (*http.Response, error) {
-	scheme := "https"
-	if r.TLS == nil {
-		scheme = "http"
-	}
-	targetURL := fmt.Sprintf("%s://%s%s", scheme, r.Host, r.RequestURI)
+	targetURL := fmt.Sprintf("%s://%s%s", h.upstreamScheme(r), r.Host, r.RequestURI)
 
 	upstreamReq, err := http.NewRequestWithContext(r.Context(), r.Method, targetURL, bytes.NewReader(body))
 	if err != nil {
@@ -565,6 +557,16 @@ func (h *Handler) doUpstreamRequestWithBody(r *http.Request, body []byte) (*http
 	upstreamReq.Host = r.Host
 
 	return h.client.Do(upstreamReq)
+}
+
+func (h *Handler) upstreamScheme(r *http.Request) string {
+	if h.cfg.UpstreamScheme != "" {
+		return h.cfg.UpstreamScheme
+	}
+	if r.TLS == nil {
+		return "http"
+	}
+	return "https"
 }
 
 // serveUpstreamResponse forwards an upstream response to the client unchanged.
