@@ -107,7 +107,7 @@ func TestUpstreamSchemeForStreamingAndBufferedRequests(t *testing.T) {
 				}
 				t.Run(path, func(t *testing.T) {
 					const body = "request body"
-					req := httptest.NewRequest(http.MethodPost, "http://git.example/repo.git/git-upload-pack?service=git-upload-pack", bytes.NewBufferString(body))
+					req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "http://git.example/repo.git/git-upload-pack?service=git-upload-pack", bytes.NewBufferString(body))
 					req.RequestURI = req.URL.RequestURI()
 					if tt.requestUsesTLS {
 						req.TLS = &tls.ConnectionState{}
@@ -142,7 +142,9 @@ func TestUpstreamSchemeForStreamingAndBufferedRequests(t *testing.T) {
 					if err != nil {
 						t.Fatalf("upstream request error = %v", err)
 					}
-					resp.Body.Close()
+					if err := resp.Body.Close(); err != nil {
+						t.Fatalf("close upstream response body: %v", err)
+					}
 
 					wantURL := tt.want + "://git.example/repo.git/git-upload-pack?service=git-upload-pack"
 					if gotURL != wantURL {
