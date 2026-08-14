@@ -81,6 +81,11 @@ type Config struct {
 	// Default: empty (cache all detected Git hosts).
 	AllowedHosts []string
 
+	// UpstreamScheme overrides the scheme used for upstream Git requests.
+	// Valid values are "http", "https", and empty. When empty, the handler
+	// uses "https" for TLS requests and "http" for plain HTTP requests.
+	UpstreamScheme string
+
 	// Logger receives cache and proxy diagnostics. A console logger is used when nil.
 	Logger logger.Logger
 }
@@ -182,6 +187,9 @@ func effectivePort(u *url.URL) string {
 // New creates a new Git proxy Handler. Creates cache directories if they don't exist.
 // Returns an error if cache initialization fails.
 func New(cfg Config) (*Handler, error) {
+	if err := validateUpstreamScheme(cfg.UpstreamScheme); err != nil {
+		return nil, err
+	}
 	if cfg.Logger == nil {
 		cfg.Logger = logger.NewConsoleLogger()
 	}
@@ -353,6 +361,9 @@ func (cfg *Config) Validate() error {
 	if cfg.MaxPackCacheEntrySize < 0 {
 		return errors.New("git.MaxPackCacheEntrySize must not be negative")
 	}
+	if err := validateUpstreamScheme(cfg.UpstreamScheme); err != nil {
+		return err
+	}
 
 	for i, host := range cfg.AllowedHosts {
 		if strings.TrimSpace(host) == "" {
@@ -363,6 +374,13 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	return nil
+}
+
+func validateUpstreamScheme(scheme string) error {
+	if scheme != "" && scheme != "http" && scheme != "https" {
+		return fmt.Errorf("git.UpstreamScheme must be empty, http, or https: %q", scheme)
+	}
 	return nil
 }
 
