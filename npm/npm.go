@@ -265,13 +265,10 @@ func (s *Server) handleForwardProxy(w http.ResponseWriter, r *http.Request) {
 
 	upstreamHost := parsed.Host
 	fetchPath := parsed.Path
-	if parsed.RawQuery != "" {
-		fetchPath += "?" + parsed.RawQuery
-	}
 	upstreamBase := parsed.Scheme + "://" + parsed.Host
 
 	if isTarballPath(fetchPath) {
-		s.handleTarballURL(w, r.RequestURI, upstreamHost, fetchPath)
+		s.handleTarballURL(w, r.RequestURI, upstreamHost, fetchPath, parsed.RawQuery)
 		return
 	}
 	s.handleMetadata(w, r, upstreamBase, fetchPath, upstreamHost)
@@ -306,6 +303,10 @@ func (s *Server) handleMetadata(w http.ResponseWriter, r *http.Request, upstream
 		return
 	}
 
+	// Query variants must reach the registry and occupy separate cache entries.
+	if r.URL.RawQuery != "" {
+		path += "?" + r.URL.RawQuery
+	}
 	cacheKey := metadataCacheKey(upstreamHost, path)
 
 	rc, err := s.cache.GetOrFetch(cacheKey, func() (io.ReadCloser, time.Duration, error) {
@@ -362,11 +363,11 @@ func (s *Server) handleMetadata(w http.ResponseWriter, r *http.Request, upstream
 
 // handleTarball proxies and caches package tarballs.
 // Tarballs are streamed and cached permanently (TTL = -1).
-func (s *Server) handleTarball(w http.ResponseWriter, _ *http.Request, upstreamBase, path, upstreamHost string) {
-	s.handleTarballURL(w, "", upstreamHost, path, upstreamBase)
+func (s *Server) handleTarball(w http.ResponseWriter, r *http.Request, upstreamBase, path, upstreamHost string) {
+	s.handleTarballURL(w, "", upstreamHost, path, r.URL.RawQuery, upstreamBase)
 }
 
-func (s *Server) handleTarballURL(w http.ResponseWriter, fetchURL, upstreamHost, path string, upstreamBase ...string) {
+func (s *Server) handleTarballURL(w http.ResponseWriter, fetchURL, upstreamHost, path, rawQuery string, upstreamBase ...string) {
 	var cacheKey string
 	var fetch func() (io.ReadCloser, int, error)
 	switch {
@@ -381,6 +382,11 @@ func (s *Server) handleTarballURL(w http.ResponseWriter, fetchURL, upstreamHost,
 			base = upstreamBase[0]
 		}
 		cacheKey = tarballCacheKey(upstreamHost, path)
+		// Compact only the path so query contents cannot change the legacy key structure.
+		if rawQuery != "" {
+			cacheKey += "?" + rawQuery
+			path += "?" + rawQuery
+		}
 		fetch = func() (io.ReadCloser, int, error) {
 			return s.fetchFromUpstream(base, path)
 		}
